@@ -113,7 +113,7 @@ int main(int argc, char* argv[])
     int files_size=100;
     int files_num=0;
     struct stat statbuf ;
-    string metadata;
+    string metadata="";
 
 
     //interpreting command line input
