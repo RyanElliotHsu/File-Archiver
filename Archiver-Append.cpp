@@ -28,7 +28,7 @@ off_t data_pos;
 off_t meta_pos;
 char buffer[BSIZE];
 
-void archiver(struct dirent* dirpx,string pathx)
+void archiver(struct dirent* dirpx,string pathx, string metadata)
 {
     struct stat statbuf;
     if (stat(dirpx->d_name,&statbuf)==-1)
@@ -47,6 +47,29 @@ void archiver(struct dirent* dirpx,string pathx)
         }
         int n=0;
         curr_pos=lseek(archivefd,data_pos,SEEK_SET);
+        //appending all inode information to metadata
+        metadata += curr_pos;
+        metadata += "?";                //append ? after every element as delimiter
+        metadata += statbuf.st_dev;
+        metadata += "?";
+        metadata += statbuf.st_ino;
+        metadata += "?";
+        metadata += statbuf.st_mode;
+        metadata += "?";
+        metadata += statbuf.st_nlink;
+        metadata += "?";
+        metadata += statbuf.st_uid;
+        metadata += "?";
+        metadata += statbuf.st_gid;
+        metadata += "?";
+        metadata += statbuf.st_size;
+        metadata += "?";
+        metadata += statbuf.st_atime;
+        metadata += "?";
+        metadata += statbuf.st_mtime;
+        metadata += "?";
+        metadata += statbuf.st_ctime;
+        metadata += ":";
         while((n=read(filex, buffer, sizeof(buffer)))>0)
         {
             write(archivefd,buffer,n);
@@ -65,7 +88,7 @@ void archiver(struct dirent* dirpx,string pathx)
             fprintf (stderr , " cannot open %s \n",dirpx->d_name);
         else {
             while ((dirp = readdir (dirx)) != NULL )
-                archiver(dirp,path);
+                archiver(dirp,path,metadata);
             closedir(dirx);
         }
 
@@ -90,6 +113,7 @@ int main(int argc, char* argv[])
     int files_size=100;
     int files_num=0;
     struct stat statbuf ;
+    string metadata;
 
 
     //interpreting command line input
@@ -209,6 +233,31 @@ int main(int argc, char* argv[])
                 }
                 int n=0;
                 curr_pos=lseek(archivefd,data_pos,SEEK_SET);
+
+                //appending all inode information to metadata
+                metadata += curr_pos;
+                metadata += "?";                //append ? after every element as delimiter
+                metadata += statbuf.st_dev;
+                metadata += "?";
+                metadata += statbuf.st_ino;
+                metadata += "?";
+                metadata += statbuf.st_mode;
+                metadata += "?";
+                metadata += statbuf.st_nlink;
+                metadata += "?";
+                metadata += statbuf.st_uid;
+                metadata += "?";
+                metadata += statbuf.st_gid;
+                metadata += "?";
+                metadata += statbuf.st_size;
+                metadata += "?";
+                metadata += statbuf.st_atime;
+                metadata += "?";
+                metadata += statbuf.st_mtime;
+                metadata += "?";
+                metadata += statbuf.st_ctime;
+                metadata += ":";
+
                 while((n=read(filex, buffer, sizeof(buffer)))>0)
 		        {
                     write(archivefd,buffer,n);
@@ -227,7 +276,7 @@ int main(int argc, char* argv[])
                     fprintf (stderr , " cannot open %s \n",files[count].c_str());
                 else {
                     while ((dirp = readdir (dirx)) != NULL )
-                        archiver(dirp,path);
+                        archiver(dirp,path,metadata);
                     closedir(dirx);
                 }
 
