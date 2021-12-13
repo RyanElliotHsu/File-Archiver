@@ -31,6 +31,7 @@ char buffer[BSIZE];
 void archiver(struct dirent* dirpx,string pathx)
 {
     struct stat statbuf;
+    string path;
     if (stat(dirpx->d_name,&statbuf)==-1)
     {
         perror(" Failed to get file status ");
@@ -58,7 +59,6 @@ void archiver(struct dirent* dirpx,string pathx)
     else if((statbuf.st_mode & S_IFMT) == S_IFDIR)
     {
         //dir
-        string path;
         DIR * dirx ;
         struct dirent *dirp ;
         if ((dirx = opendir(dirpx->d_name)) == NULL)
@@ -183,7 +183,7 @@ int main(int argc, char* argv[])
         data_pos=20;
         meta_pos=0;
         curr_pos=0;
-
+        string path;
         int archivefd;
         archivefd = creat(archive.c_str(),0644);        //created file
         int count=0;
@@ -220,7 +220,6 @@ int main(int argc, char* argv[])
             else if((statbuf.st_mode & S_IFMT) == S_IFDIR)
             {
                 //dir
-                string path;
                 DIR * dirx ;
 	            struct dirent *dirp ;
                 if ((dirx = opendir(files[count].c_str())) == NULL)
