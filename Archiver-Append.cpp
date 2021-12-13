@@ -11,18 +11,72 @@
 #include<stdlib.h>
 #include<fcntl.h>
 #include<string>
+#include<string.h>
 #include<unistd.h>
 #include<sys/stat.h>
+#include<sys/types.h>
+#include<dirent.h>
 
 #define BSIZE 1024
 
 using namespace std;
 //============================================================================
 
-struct metadata
+int archivefd;
+off_t curr_pos;
+off_t data_pos;
+off_t meta_pos;
+char buffer[BSIZE];
+
+void archiver(struct dirent* dirpx,string pathx)
 {
-    file
+    struct stat statbuf;
+    if (stat(dirpx->d_name,&statbuf)==-1)
+    {
+        perror(" Failed to get file status ");
+        exit(1);
+    }
+    if((statbuf.st_mode & S_IFMT) == S_IFREG)
+    {
+        //file
+        int filex;
+        if ((filex = open(dirpx->d_name, O_RDONLY)) < 0)
+        {
+            perror("open");
+            exit(1);
+        }
+        int n=0;
+        curr_pos=lseek(archivefd,data_pos,SEEK_SET);
+        while((n=read(filex, buffer, sizeof(buffer)))>0)
+        {
+            write(archivefd,buffer,n);
+            curr_pos+=n;
+        }
+
+        //curr_pos=lseek(archivefd,curr_pos,SEEK_SET);
+    }
+    else if((statbuf.st_mode & S_IFMT) == S_IFDIR)
+    {
+        //dir
+        string path;
+        DIR * dirx ;
+        struct dirent *dirp ;
+        if ((dirx = opendir(dirpx->d_name)) == NULL)
+            fprintf (stderr , " cannot open %s \n",dirpx->d_name);
+        else {
+            while ((dirp = readdir (dirx)) != NULL )
+                archiver(dirp,path);
+            closedir(dirx);
+        }
+
+    }
+    else if((statbuf.st_mode & S_IFMT) == S_IFLNK)
+    {
+        //symblink
+    }
 }
+
+
 int main(int argc, char* argv[])
 {
     bool c=0;
@@ -33,7 +87,6 @@ int main(int argc, char* argv[])
     int start=0;
     string archive="";
     string* files =new string[100];
-    char buffer[BSIZE];
     int files_size=100;
     int files_num=0;
     struct stat statbuf ;
@@ -127,20 +180,20 @@ int main(int argc, char* argv[])
     if(c==1)
     {
         //archive
-        off_t data_pos=20;
-        off_t meta_pos=0;
-        off_t curr_pos=0;
+        data_pos=20;
+        meta_pos=0;
+        curr_pos=0;
 
         int archivefd;
         archivefd = creat(archive.c_str(),0644);        //created file
         int count=0;
         curr_pos=lseek(archivefd,data_pos,SEEK_SET);
-        if(write(archivefd,buffer,buffer.size())<0)
+        if(write(archivefd,buffer,sizeof(buffer))<0)
             perror("write");
 
         while(files_num>0)
         {
-            if (stat(files[count],&statbuf)==-1)
+            if (stat(files[count].c_str(),&statbuf)==-1)
             {
                 perror(" Failed to get file status ");
                 exit(1);
@@ -149,7 +202,7 @@ int main(int argc, char* argv[])
             {
                 //file
                 int filex;
-                if ((filex = open(files[count] , O_RDONLY)) < 0)
+                if ((filex = open(files[count].c_str(), O_RDONLY)) < 0)
                 {
                     perror("open");
                     exit(1);
@@ -161,11 +214,23 @@ int main(int argc, char* argv[])
                     write(archivefd,buffer,n);
                     curr_pos+=n;
                 }
+
                 //curr_pos=lseek(archivefd,curr_pos,SEEK_SET);
             }
             else if((statbuf.st_mode & S_IFMT) == S_IFDIR)
             {
                 //dir
+                string path;
+                DIR * dirx ;
+	            struct dirent *dirp ;
+                if ((dirx = opendir(files[count].c_str())) == NULL)
+                    fprintf (stderr , " cannot open %s \n",files[count].c_str());
+                else {
+                    while ((dirp = readdir (dirx)) != NULL )
+                        archiver(dirp,path);
+                    closedir(dirx);
+                }
+
             }
             else if((statbuf.st_mode & S_IFMT) == S_IFLNK)
             {
