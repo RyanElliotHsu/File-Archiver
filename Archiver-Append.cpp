@@ -19,6 +19,10 @@
 using namespace std;
 //============================================================================
 
+struct metadata
+{
+    file
+}
 int main(int argc, char* argv[])
 {
     bool c=0;
