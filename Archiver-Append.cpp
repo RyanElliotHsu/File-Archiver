@@ -28,6 +28,39 @@ off_t data_pos;
 off_t meta_pos;
 char buffer[BSIZE];
 
+struct File_metadata
+{
+    string name;
+    string curr_pos;
+    string st_dev;
+    string st_ino;
+    string st_mode;
+    string nlink;
+    string uid;
+    string gid;
+    string size;
+    string atime;
+    string mtime;
+    string ctime;
+};
+
+struct Dir_metadata
+{
+    string name;
+    string curr_pos;
+    string numcontent;
+    string st_dev;
+    string st_ino;
+    string st_mode;
+    string nlink;
+    string uid;
+    string gid;
+    string size;
+    string atime;
+    string mtime;
+    string ctime;
+};
+
 void printer(struct dirent* dirpx, string pathx);
 void archiver(struct dirent* dirpx,string pathx, string metadata)
 {
@@ -403,6 +436,7 @@ int main(int argc, char* argv[])
 
         while (true)//still stuff to read from metadata)
         {
+            
 
             int newfd;
             newfd = creat()
