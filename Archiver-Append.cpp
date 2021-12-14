@@ -55,7 +55,9 @@ void archiver(struct dirent* dirpx,string pathx, string metadata)
         curr_pos=lseek(archivefd,data_pos,SEEK_SET);
         //appending all inode information to metadata
         metadata += "f";
-        metadata += "?";  
+        metadata += "?";
+        metadata += name;               //append name of file to metadata
+        metadata += "?";
         metadata += curr_pos;
         metadata += "?";                //append ? after every element as delimiter
         metadata += statbuf.st_dev;
@@ -99,7 +101,35 @@ void archiver(struct dirent* dirpx,string pathx, string metadata)
             {
                 num_contents++;
             }
-            //insert metadata code
+            //insert metadata
+            metadata += "d";
+            metadata += "?";
+            metadata += name;
+            metadata += "?";
+            metadata += curr_pos;
+            metadata += "?";  
+            metadata += num_contents;              //append ? after every element as delimiter
+            metadata += "?";
+            metadata += statbuf.st_dev;
+            metadata += "?";
+            metadata += statbuf.st_ino;
+            metadata += "?";
+            metadata += statbuf.st_mode;
+            metadata += "?";
+            metadata += statbuf.st_nlink;
+            metadata += "?";
+            metadata += statbuf.st_uid;
+            metadata += "?";
+            metadata += statbuf.st_gid;
+            metadata += "?";
+            metadata += statbuf.st_size;
+            metadata += "?";
+            metadata += statbuf.st_atime;
+            metadata += "?";
+            metadata += statbuf.st_mtime;
+            metadata += "?";
+            metadata += statbuf.st_ctime;
+            metadata += ":";
             while ((dirp = readdir (dirx)) != NULL )
             {
                 path+="/";
@@ -257,6 +287,10 @@ int main(int argc, char* argv[])
                 curr_pos=lseek(archivefd,data_pos,SEEK_SET);
 
                 //appending all inode information to metadata
+                metadata += "f";
+                metadata += "?";
+                metadata += files[count];
+                metadata += "?";
                 metadata += curr_pos;
                 metadata += "?";                //append ? after every element as delimiter
                 metadata += statbuf.st_dev;
@@ -301,7 +335,35 @@ int main(int argc, char* argv[])
                     {
                         num_contents++;
                     }
-                    //insert meta code
+                    //insert metadata
+                    metadata += "d";
+                    metadata += "?";
+                    metadata += files[count];
+                    metadata += "?";
+                    metadata += curr_pos;
+                    metadata += "?";  
+                    metadata += num_contents;       
+                    metadata += "?";
+                    metadata += statbuf.st_dev;
+                    metadata += "?";
+                    metadata += statbuf.st_ino;
+                    metadata += "?";
+                    metadata += statbuf.st_mode;
+                    metadata += "?";
+                    metadata += statbuf.st_nlink;
+                    metadata += "?";
+                    metadata += statbuf.st_uid;
+                    metadata += "?";
+                    metadata += statbuf.st_gid;
+                    metadata += "?";
+                    metadata += statbuf.st_size;
+                    metadata += "?";
+                    metadata += statbuf.st_atime;
+                    metadata += "?";
+                    metadata += statbuf.st_mtime;
+                    metadata += "?";
+                    metadata += statbuf.st_ctime;
+                    metadata += ":";
                     while ((dirp = readdir (dirx)) != NULL )
                     {
                         path="";
@@ -339,6 +401,25 @@ int main(int argc, char* argv[])
     else if(x==1)
     {
         //extract
+        int archivefd;
+        if ((archivefd = open(archive.c_str(),0644))<0)     //opening archive file to read from
+        {
+            perror("open");
+            exit(1);
+        }
+
+        off_t read_pos;
+        curr_pos=lseek(archivefd,meta_pos,SEEK_SET);
+
+        while (true)//still stuff to read from metadata)
+        {
+
+            int newfd;
+            newfd = creat()
+
+        
+        }
+        
 
     }
     else if(m==1)
