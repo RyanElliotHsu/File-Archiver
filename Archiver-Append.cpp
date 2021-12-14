@@ -28,12 +28,14 @@ off_t data_pos;
 off_t meta_pos;
 char buffer[BSIZE];
 
+void printer(struct dirent* dirpx, string pathx);
 void archiver(struct dirent* dirpx,string pathx, string metadata)
 {
     struct stat statbuf;
     string path=pathx;
     string name= dirpx->d_name;
     path=path+name;
+    int num_contents=0;
     if (stat(dirpx->d_name,&statbuf)==-1)
     {
         perror(" Failed to get file status ");
@@ -51,6 +53,8 @@ void archiver(struct dirent* dirpx,string pathx, string metadata)
         int n=0;
         curr_pos=lseek(archivefd,data_pos,SEEK_SET);
         //appending all inode information to metadata
+        metadata += "f";
+        metadata += "?";  
         metadata += curr_pos;
         metadata += "?";                //append ? after every element as delimiter
         metadata += statbuf.st_dev;
@@ -89,6 +93,12 @@ void archiver(struct dirent* dirpx,string pathx, string metadata)
         if ((dirx = opendir(path.c_str())) == NULL)
             fprintf (stderr , " cannot open %s \n",dirpx->d_name);
         else {
+            num_contents=0;
+            while ((dirp = readdir (dirx)) != NULL )
+            {
+                num_contents++;
+            }
+            //insert metadata code
             while ((dirp = readdir (dirx)) != NULL )
             {
                 path+="/";
@@ -119,6 +129,7 @@ int main(int argc, char* argv[])
     int files_num=0;
     struct stat statbuf ;
     string metadata="";
+    int num_contents=0;         //to count the number of contents within a directory
 
 
     //interpreting command line input
@@ -279,6 +290,12 @@ int main(int argc, char* argv[])
                 if ((dirx = opendir(files[count].c_str())) == NULL)
                     fprintf (stderr , " cannot open %s \n",files[count].c_str());
                 else {
+                    num_contents=0;
+                    while ((dirp = readdir (dirx)) != NULL )
+                    {
+                        num_contents++;
+                    }
+                    //insert meta code
                     while ((dirp = readdir (dirx)) != NULL )
                     {
                         path="";
@@ -299,15 +316,20 @@ int main(int argc, char* argv[])
             files_num--;
         }
         //when the data from all files has been put together append the metadata section
+        //write location of metadata to header
 
     }
     else if(a==1)
     {
         //append
+        //copy all metadata to a buffer
+        //write more data
+        //append metadata again at the end
     }
     else if(x==1)
     {
         //extract
+
     }
     else if(m==1)
     {
