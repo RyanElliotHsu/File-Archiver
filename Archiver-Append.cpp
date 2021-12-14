@@ -6,6 +6,7 @@
 // Copyright    : All rights are reserved
 // Description  : Assignment #4 Archiver Append
 //============================================================================
+
 #include<iostream>
 #include<stdio.h>
 #include<stdlib.h>
@@ -82,7 +83,7 @@ void archiver(struct dirent* dirpx,string pathx, string metadata)
             write(archivefd,buffer,n);
             curr_pos+=n;
         }
-
+        meta_pos=curr_pos;
         //curr_pos=lseek(archivefd,curr_pos,SEEK_SET);
     }
     else if((statbuf.st_mode & S_IFMT) == S_IFDIR)
@@ -105,6 +106,7 @@ void archiver(struct dirent* dirpx,string pathx, string metadata)
                 archiver(dirp,path,metadata);
             }
             closedir(dirx);
+            meta_pos=curr_pos;
         }
 
     }
@@ -112,6 +114,11 @@ void archiver(struct dirent* dirpx,string pathx, string metadata)
     {
         //symblink
     }
+
+    curr_pos = lseek(archivefd,0,SEEK_SET);
+    char str[20];
+    sprintf(str, "%d", meta_pos);
+    int w=write(archivefd,str,20);
 }
 
 
@@ -224,7 +231,6 @@ int main(int argc, char* argv[])
         meta_pos=0;
         curr_pos=0;
         string path;
-        int archivefd;
         archivefd = creat(archive.c_str(),0644);        //created file
         int count=0;
         curr_pos=lseek(archivefd,data_pos,SEEK_SET);
@@ -279,7 +285,7 @@ int main(int argc, char* argv[])
                     write(archivefd,buffer,n);
                     curr_pos+=n;
                 }
-
+                meta_pos=curr_pos;
                 //curr_pos=lseek(archivefd,curr_pos,SEEK_SET);
             }
             else if((statbuf.st_mode & S_IFMT) == S_IFDIR)
@@ -304,6 +310,7 @@ int main(int argc, char* argv[])
                         archiver(dirp,path,metadata);
                     }
                     closedir(dirx);
+                    meta_pos=curr_pos;
                 }
 
             }
@@ -317,7 +324,10 @@ int main(int argc, char* argv[])
         }
         //when the data from all files has been put together append the metadata section
         //write location of metadata to header
-
+        curr_pos = lseek(archivefd,0,SEEK_SET);
+        char str[20];
+        sprintf(str, "%d", meta_pos);
+        int w=write(archivefd,str,20);
     }
     else if(a==1)
     {
@@ -334,6 +344,36 @@ int main(int argc, char* argv[])
     else if(m==1)
     {
         //print metadata
+        char meta_buf[50];
+        char meta_bufx[1];
+        if(archivefd=open(archive.c_str(),O_RDONLY)<0)
+            perror("open");
+        char loc[20];
+        int count = read(archivefd,loc,20);
+        meta_pos=atoi(loc);
+        curr_pos=lseek(archivefd,meta_pos,SEEK_SET);
+        while((count=read(archivefd, meta_bufx, 1))>0)
+		{
+            if(meta_bufx=="?")
+            {
+                printf("%s,",meta_buf);
+                memset(meta_buf, 0, sizeof(meta_buf));
+            }
+            
+            else if(meta_bufx==":")
+            {
+                printf("%s\n",meta_buf);
+                memset(meta_buf, 0, sizeof(meta_buf));
+            }
+
+            else
+            {
+                strcat(meta_buf,meta_bufx);
+            }
+        }
+
+
+
     }
     else if(p==1)
     {
