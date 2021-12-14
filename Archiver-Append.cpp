@@ -31,7 +31,9 @@ char buffer[BSIZE];
 void archiver(struct dirent* dirpx,string pathx, string metadata)
 {
     struct stat statbuf;
-    string path;
+    string path=pathx;
+    string name= dirpx->d_name;
+    path=path+name;
     if (stat(dirpx->d_name,&statbuf)==-1)
     {
         perror(" Failed to get file status ");
@@ -41,7 +43,7 @@ void archiver(struct dirent* dirpx,string pathx, string metadata)
     {
         //file
         int filex;
-        if ((filex = open(dirpx->d_name, O_RDONLY)) < 0)
+        if ((filex = open(path.c_str(), O_RDONLY)) < 0)
         {
             perror("open");
             exit(1);
@@ -84,11 +86,14 @@ void archiver(struct dirent* dirpx,string pathx, string metadata)
         //dir
         DIR * dirx ;
         struct dirent *dirp ;
-        if ((dirx = opendir(dirpx->d_name)) == NULL)
+        if ((dirx = opendir(path.c_str())) == NULL)
             fprintf (stderr , " cannot open %s \n",dirpx->d_name);
         else {
             while ((dirp = readdir (dirx)) != NULL )
+            {
+                path+="/";
                 archiver(dirp,path,metadata);
+            }
             closedir(dirx);
         }
 
@@ -275,7 +280,12 @@ int main(int argc, char* argv[])
                     fprintf (stderr , " cannot open %s \n",files[count].c_str());
                 else {
                     while ((dirp = readdir (dirx)) != NULL )
+                    {
+                        path="";
+                        path+=files[count];
+                        path+="/";
                         archiver(dirp,path,metadata);
+                    }
                     closedir(dirx);
                 }
 
