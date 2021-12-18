@@ -29,24 +29,9 @@ off_t data_pos;
 off_t meta_pos;
 char buffer[BSIZE];
 
-struct File_metadata
+struct Metadata
 {
-    string name;
-    string curr_pos;
-    string st_dev;
-    string st_ino;
-    string st_mode;
-    string nlink;
-    string uid;
-    string gid;
-    string size;
-    string atime;
-    string mtime;
-    string ctime;
-};
-
-struct Dir_metadata
-{
+    string type;
     string name;
     string curr_pos;
     string numcontent;
@@ -435,23 +420,41 @@ int main(int argc, char* argv[])
     {
         //extract
         int archivefd;
-        if ((archivefd = open(archive.c_str(),0644))<0)     //opening archive file to read from
+        if ((archivefd = open(archive.c_str(),O_RDONLY))<0)     //opening archive file to read from
         {
             perror("open");
             exit(1);
         }
 
         off_t read_pos;
+
+        //getting the position of the metadata
+        char loc[20];
+        int count = read(archivefd,loc,20);
+        meta_pos=atoi(loc);
         curr_pos=lseek(archivefd,meta_pos,SEEK_SET);
+        char meta_buf[50];
+        char meta_bufx[1];
 
-        while (true)//still stuff to read from metadata)
-        {
+        int count=0;
+        while((count=read(archivefd, meta_bufx, 1))>0)
+		{
+            if(meta_bufx=="?")
+            {
+                count++;
+                memset(meta_buf, 0, sizeof(meta_buf));
+            }
             
+            else if(meta_bufx==":")
+            {
+                printf("%s\n",meta_buf);
+                memset(meta_buf, 0, sizeof(meta_buf));
+            }
 
-            int newfd;
-            newfd = creat()
-
-        
+            else
+            {
+                strcat(meta_buf,meta_bufx);
+            }
         }
         
 
