@@ -62,7 +62,90 @@ struct Dir_metadata
     string ctime;
 };
 
-void printer(struct dirent* dirpx, string pathx);
+void getstruct(struct metadata &meta)
+{
+    // *meta.type=
+    // *meta.name=
+    // *meta.curr_pos=
+    // *meta
+    // *meta.numcontent;
+    // *meta.st_dev;
+    // *meta.st_ino;
+    // *meta.st_mode;
+    // *meta.nlink;
+    // *meta.uid;
+    // *meta.gid;
+    // *meta.size;
+    // *meta.atime;
+    // *meta.mtime;
+    // *meta.ctime;
+}
+
+void change_attributes(int fd,struct metadata meta)
+{
+    fchmod(fd,meta.st_mode);                
+
+}
+void printer(string pathx, int num_f)
+{
+    char meta_buf[50];
+    char meta_bufx[1];
+    int count;
+    int skip=0;
+    while((count=read(archivefd, meta_bufx, 1))>0)
+    {
+        if(skip==0)
+        {    
+            if(meta_bufx=="?")
+            {
+                if(strcmp(meta_buf,"F")==0)
+                {    
+                    memset(meta_buf, 0, sizeof(meta_buf));
+                    count=read(archivefd,meta_bufx,1);
+                    while(strcmp(meta_bufx,"?")!=0)
+                    {
+                        strcat(meta_buf,meta_bufx);
+                        count=read(archivefd,meta_bufx,1);    
+                    }
+                    printf("%s%s",pathx.c_str(),meta_buf);
+                }
+                else if (strcmp(meta_buf,"D")==0)
+                {
+                    pathx+"-";
+                    memset(meta_buf, 0, sizeof(meta_buf));
+                    count=read(archivefd,meta_bufx,1);
+                    while(strcmp(meta_bufx,"?")!=0)
+                    {
+                        strcat(meta_buf,meta_bufx);
+                        count=read(archivefd,meta_bufx,1);    
+                    }
+                    printf("%s%s",pathx.c_str(),meta_buf);
+                    printer(pathx,num_f);
+                    
+                }
+                memset(meta_buf, 0, sizeof(meta_buf));
+                skip=1;
+            }
+
+            else
+            {
+                strcat(meta_buf,meta_bufx);
+            }
+        }
+        else
+        {
+            while(meta_bufx!=":")
+            {
+                count=read(archivefd,meta_bufx,1); 
+            }
+            memset(meta_buf, 0, sizeof(meta_buf));
+            skip=0;
+            continue;
+        }
+    }
+
+
+}
 void archiver(struct dirent* dirpx,string pathx, string metadata)
 {
     struct stat statbuf;
@@ -427,8 +510,22 @@ int main(int argc, char* argv[])
     else if(a==1)
     {
         //append
+        if(archivefd=open(archive.c_str(),O_RDONLY)<0)
+            perror("open");
+        char loc[20];
+        int count = read(archivefd,loc,20);
+        meta_pos=atoi(loc);
+        curr_pos=lseek(archivefd,meta_pos,SEEK_SET);
         //copy all metadata to a buffer
+        string buffer_str="";
+        while((count=read(archivefd, buffer, sizeof(buffer)))>0)
+        {
+            buffer_str+= buffer;
+        }
+
         //write more data
+
+
         //append metadata again at the end
     }
     else if(x==1)
@@ -493,6 +590,35 @@ int main(int argc, char* argv[])
     else if(p==1)
     {
         //show hierarchy
+        char meta_buf[50];
+        char meta_bufx[1];
+        if(archivefd=open(archive.c_str(),O_RDONLY)<0)
+            perror("open");
+        char loc[20];
+        int count = read(archivefd,loc,20);
+        meta_pos=atoi(loc);
+        curr_pos=lseek(archivefd,meta_pos,SEEK_SET);
+        while((count=read(archivefd, meta_bufx, 1))>0)
+		{
+            if(meta_bufx=="?")
+            {
+                printf("%s,",meta_buf);
+                memset(meta_buf, 0, sizeof(meta_buf));
+            }
+            
+            else if(meta_bufx==":")
+            {
+                printf("%s\n",meta_buf);
+                memset(meta_buf, 0, sizeof(meta_buf));
+            }
+
+            else
+            {
+                strcat(meta_buf,meta_bufx);
+            }
+        }
+
+
     }
 
 
