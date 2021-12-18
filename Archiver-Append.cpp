@@ -47,28 +47,54 @@ struct Metadata
     string ctime;
 };
 
-void getstruct(struct metadata &meta)
+int getstruct(struct Metadata &meta)
 {
-    // *meta.type=
-    // *meta.name=
-    // *meta.curr_pos=
-    // *meta
-    // *meta.numcontent;
-    // *meta.st_dev;
-    // *meta.st_ino;
-    // *meta.st_mode;
-    // *meta.nlink;
-    // *meta.uid;
-    // *meta.gid;
-    // *meta.size;
-    // *meta.atime;
-    // *meta.mtime;
-    // *meta.ctime;
+    char meta_buf[50];
+    char meta_bufx[1];
+    char loc[20];
+    int count=0;
+    int what_data=0;
+    while((count=read(archivefd, meta_bufx, 1))>0)
+    {
+        if(meta_bufx=="?")
+        {   
+            if(what_data==0)
+                meta.type=meta_buf;
+            else if(what_data==1)
+                meta.name=meta_buf;
+            else if(what_data==2)
+                meta.curr_pos=meta_buf;
+            else if(what_data==3)
+                meta.numcontent=meta_buf;
+            else if(what_data==4)
+                meta.st_mode=meta_buf;
+            else if(what_data==5)
+                meta.size=meta_buf;
+            printf("%s,",meta_buf);
+            memset(meta_buf, 0, sizeof(meta_buf));
+            what_data++;
+        }
+        
+        else if(meta_bufx==":")
+        {
+            printf("%s\n",meta_buf);
+            memset(meta_buf, 0, sizeof(meta_buf));
+            return 0;
+            break;
+        }
+
+        else
+        {
+            strcat(meta_buf,meta_bufx);
+        }
+    }
+    if(count<=0)
+        return -1;    
 }
 
-void change_attributes(int fd,struct metadata meta)
+void change_attributes(int fd,struct Metadata meta)
 {
-    fchmod(fd,meta.st_mode);                
+    fchmod(fd,stoi(meta.st_mode));                
 
 }
 void printer(string pathx, int num_f)
@@ -99,6 +125,7 @@ void printer(string pathx, int num_f)
                     pathx+"-";
                     memset(meta_buf, 0, sizeof(meta_buf));
                     count=read(archivefd,meta_bufx,1);
+
                     while(strcmp(meta_bufx,"?")!=0)
                     {
                         strcat(meta_buf,meta_bufx);
@@ -200,6 +227,8 @@ void archiver(struct dirent* dirpx,string pathx, string metadata)
             num_contents=0;
             while ((dirp = readdir (dirx)) != NULL )
             {
+                if(strcmp(dirp->d_name,"..")==0||strcmp(dirp->d_name,".")==0)
+                    continue;
                 num_contents++;
             }
             //insert metadata
@@ -231,9 +260,12 @@ void archiver(struct dirent* dirpx,string pathx, string metadata)
             metadata += "?";
             metadata += statbuf.st_ctime;
             metadata += ":";
+            rewinddir(dirx);
+            path+="/";
             while ((dirp = readdir (dirx)) != NULL )
             {
-                path+="/";
+                if(strcmp(dirp->d_name,"..")==0||strcmp(dirp->d_name,".")==0)
+                    continue;
                 archiver(dirp,path,metadata);
             }
             closedir(dirx);
@@ -365,8 +397,8 @@ int main(int argc, char* argv[])
         archivefd = creat(archive.c_str(),0644);        //created file
         int count=0;
         curr_pos=lseek(archivefd,data_pos,SEEK_SET);
-        if(write(archivefd,buffer,sizeof(buffer))<0)
-            perror("write");
+        // if(write(archivefd,buffer,sizeof(buffer))<0)
+        //     perror("write");
 
         while(files_num>0)
         {
@@ -426,6 +458,8 @@ int main(int argc, char* argv[])
             else if((statbuf.st_mode & S_IFMT) == S_IFDIR)
             {
                 //dir
+                //condition to skip if .. or .
+
                 DIR * dirx ;
 	            struct dirent *dirp ;
                 if ((dirx = opendir(files[count].c_str())) == NULL)
@@ -434,6 +468,8 @@ int main(int argc, char* argv[])
                     num_contents=0;
                     while ((dirp = readdir (dirx)) != NULL )
                     {
+                        if(strcmp(dirp->d_name,"..")==0||strcmp(dirp->d_name,".")==0)
+                            continue;
                         num_contents++;
                     }
                     //insert metadata
@@ -465,11 +501,14 @@ int main(int argc, char* argv[])
                     metadata += "?";
                     metadata += statbuf.st_ctime;
                     metadata += ":";
-                    while ((dirp = readdir (dirx)) != NULL )
+                    rewinddir(dirx);
+                    while ((dirp = readdir(dirx)) != NULL )
                     {
                         path="";
                         path+=files[count];
                         path+="/";
+                        if(strcmp(dirp->d_name,"..")==0||strcmp(dirp->d_name,".")==0)
+                            continue;
                         archiver(dirp,path,metadata);
                     }
                     closedir(dirx);
@@ -480,12 +519,18 @@ int main(int argc, char* argv[])
             else if((statbuf.st_mode & S_IFMT) == S_IFLNK)
             {
                 //symblink
+
             }
 
             count++;
             files_num--;
         }
         //when the data from all files has been put together append the metadata section
+        //when the data from all files has been put together append the metadata section
+
+        count=lseek(archivefd,meta_pos,SEEK_SET);
+        count=write(archivefd,metadata.c_str(),sizeof(metadata.c_str()));
+        
         //write location of metadata to header
         curr_pos = lseek(archivefd,0,SEEK_SET);
         char str[20];
@@ -495,10 +540,12 @@ int main(int argc, char* argv[])
     else if(a==1)
     {
         //append
+        string path="";
         if(archivefd=open(archive.c_str(),O_RDONLY)<0)
             perror("open");
         char loc[20];
         int count = read(archivefd,loc,20);
+        int count_f=0;
         meta_pos=atoi(loc);
         curr_pos=lseek(archivefd,meta_pos,SEEK_SET);
         //copy all metadata to a buffer
@@ -509,9 +556,144 @@ int main(int argc, char* argv[])
         }
 
         //write more data
+        curr_pos=lseek(archivefd,meta_pos,SEEK_SET);
+
+           while(files_num>0)
+        {
+            if (stat(files[count].c_str(),&statbuf)==-1)
+            {
+                perror(" Failed to get file status ");
+                exit(1);
+            }
+            if((statbuf.st_mode & S_IFMT) == S_IFREG)
+            {
+                //file
+                int filex;
+                if ((filex = open(files[count].c_str(), O_RDONLY)) < 0)
+                {
+                    perror("open");
+                    exit(1);
+                }
+                int n=0;
+                curr_pos=lseek(archivefd,data_pos,SEEK_SET);
+
+                //appending all inode information to metadata
+                metadata += "f";
+                metadata += "?";
+                metadata += files[count];
+                metadata += "?";
+                metadata += curr_pos;
+                metadata += "?";                //append ? after every element as delimiter
+                metadata += statbuf.st_dev;
+                metadata += "?";
+                metadata += statbuf.st_ino;
+                metadata += "?";
+                metadata += statbuf.st_mode;
+                metadata += "?";
+                metadata += statbuf.st_nlink;
+                metadata += "?";
+                metadata += statbuf.st_uid;
+                metadata += "?";
+                metadata += statbuf.st_gid;
+                metadata += "?";
+                metadata += statbuf.st_size;
+                metadata += "?";
+                metadata += statbuf.st_atime;
+                metadata += "?";
+                metadata += statbuf.st_mtime;
+                metadata += "?";
+                metadata += statbuf.st_ctime;
+                metadata += ":";
+
+                while((n=read(filex, buffer, sizeof(buffer)))>0)
+		        {
+                    write(archivefd,buffer,n);
+                    curr_pos+=n;
+                }
+                meta_pos=curr_pos;
+                //curr_pos=lseek(archivefd,curr_pos,SEEK_SET);
+            }
+            else if((statbuf.st_mode & S_IFMT) == S_IFDIR)
+            {
+                //dir
+                //condition to skip if .. or .
+
+                DIR * dirx ;
+	            struct dirent *dirp ;
+                if ((dirx = opendir(files[count].c_str())) == NULL)
+                    fprintf (stderr , " cannot open %s \n",files[count].c_str());
+                else {
+                    num_contents=0;
+                    while ((dirp = readdir (dirx)) != NULL )
+                    {
+                        if(strcmp(dirp->d_name,"..")==0||strcmp(dirp->d_name,".")==0)
+                            continue;
+                        num_contents++;
+                    }
+                    //insert metadata
+                    metadata += "d";
+                    metadata += "?";
+                    metadata += files[count];
+                    metadata += "?";
+                    metadata += curr_pos;
+                    metadata += "?";  
+                    metadata += num_contents;       
+                    metadata += "?";
+                    metadata += statbuf.st_dev;
+                    metadata += "?";
+                    metadata += statbuf.st_ino;
+                    metadata += "?";
+                    metadata += statbuf.st_mode;
+                    metadata += "?";
+                    metadata += statbuf.st_nlink;
+                    metadata += "?";
+                    metadata += statbuf.st_uid;
+                    metadata += "?";
+                    metadata += statbuf.st_gid;
+                    metadata += "?";
+                    metadata += statbuf.st_size;
+                    metadata += "?";
+                    metadata += statbuf.st_atime;
+                    metadata += "?";
+                    metadata += statbuf.st_mtime;
+                    metadata += "?";
+                    metadata += statbuf.st_ctime;
+                    metadata += ":";
+                    rewinddir(dirx);
+                    while ((dirp = readdir(dirx)) != NULL )
+                    {
+                        path="";
+                        path+=files[count];
+                        path+="/";
+                        if(strcmp(dirp->d_name,"..")==0||strcmp(dirp->d_name,".")==0)
+                            continue;
+                        archiver(dirp,path,metadata);
+                    }
+                    closedir(dirx);
+                    meta_pos=curr_pos;
+                }
+
+            }
+            else if((statbuf.st_mode & S_IFMT) == S_IFLNK)
+            {
+                //symblink
+
+            }
+
+            count++;
+            files_num--;
+        }
+        //when the data from all files has been put together append the metadata section
+        count=lseek(archivefd,meta_pos,SEEK_SET);
+        count=write(archivefd,metadata.c_str(),sizeof(metadata.c_str()));
+
+        //write location of metadata to header
+        curr_pos = lseek(archivefd,0,SEEK_SET);
+        char str[20];
+        sprintf(str, "%d", meta_pos);
+        int w=write(archivefd,str,20);
 
 
-        //append metadata again at the end
     }
     else if(x==1)
     {
