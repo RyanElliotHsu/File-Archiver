@@ -801,23 +801,26 @@ int main(int argc, char* argv[])
 
 
     }
-    else if(x==1)
-    {
+        else if(x==1)
+    {   
+        cout<<"Extracting....\n";
         //extract
-        if ((archivefd = open(archive.c_str(),O_RDONLY))<0)     //opening archive file to read from
-        {
+        if((archivefd=open(archive.c_str(),O_RDONLY))<0)
             perror("open");
-            exit(1);
-        }
-        //getting the position of the metadata
+        
+        // printf("%d\n",archivefd);
         char loc[20];
         int count = read(archivefd,loc,20);
+        // printf("%s\n",loc);
         meta_pos=atoi(loc);
+        // printf("%d\n",count);
         curr_pos=lseek(archivefd,meta_pos,SEEK_SET);
-        struct Metadata meta;
+        // printf("%ld\n",curr_pos);
         count=0;
-        while(getstruct(meta)!=-1)
+        struct Metadata meta;
+        while(getstruct(meta)!=-1)          
         {
+            cout<<meta.name<<files[count];
             if(meta.name==files[count])
             {
                 //extract file
@@ -827,7 +830,7 @@ int main(int argc, char* argv[])
                     int nums = stoi(meta.numcontent);
                     //create directory
                     string path=meta.name;
-                    mkdir(path.c_str(),stoi(meta.st_mode));
+
                     while(nums>0)
                     {
                         extractor(path);
