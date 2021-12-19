@@ -186,8 +186,49 @@ void printer(string pathx)
             }
         }
     }
+}
+void extractor(string pathx)
+{
+    pathx+="/";
+    struct Metadata meta;
+    int check=getstruct(meta);
+    if(check!=-1)
+    {    
+        if(meta.type=="d")
+        {
+            int nums = stoi(meta.numcontent);
+            //create directory
+            pathx+=meta.name;
+            mkdir(pathx.c_str(),stoi(meta.st_mode));
+            while(nums>0)
+            {
+                extractor(pathx);
+                nums--;
+            }
+        }
+        else
+        {
+            off_t store_pos = lseek(archivefd,0,SEEK_CUR);
+            curr_pos=lseek(archivefd,stoi(meta.curr_pos),SEEK_SET);
+            int n=0;
+            int num=0;
+            char bufx[2];
+            pathx+=meta.name;
+            int filex= creat(pathx.c_str(),0644);        //created file
+            while((n=read(archivefd, bufx, 1))>0)
+            {
+                write(filex,bufx,1);
+                curr_pos+=n;
+                num+=n;
+                memset(bufx,0,sizeof(bufx));
+                if(num==stoi(meta.size))
+                    break;
+            }
 
-
+            change_attributes(filex,meta);
+            curr_pos=lseek(archivefd,store_pos,SEEK_SET);
+        }
+    }
 }
 void archiver(struct dirent* dirpx,string pathx, string &metadata)
 {
@@ -267,7 +308,7 @@ void archiver(struct dirent* dirpx,string pathx, string &metadata)
                 num_contents++;
             }
             //appending all inode information to metadata
-            metadata += "f";
+            metadata += "d";
             metadata += "?";
             metadata += name;
             metadata += "?";
@@ -780,12 +821,46 @@ int main(int argc, char* argv[])
             if(meta.name==files[count])
             {
                 //extract file
-                count++;
-                curr_pos=lseek(archivefd,meta_pos,SEEK_SET);
-                if(count==files_num)
+                cout<<"File found!\n";
+                if(meta.type=="d")
                 {
-                    printf("Success! Everything is extracted");
-                    break;
+                    int nums = stoi(meta.numcontent);
+                    //create directory
+                    string path=meta.name;
+                    mkdir(path.c_str(),stoi(meta.st_mode));
+                    while(nums>0)
+                    {
+                        extractor(path);
+                        nums--;
+                    }
+                }
+                else
+                {
+                    //meta_pos=lseek(archivefd,0,SEEK_CUR);           //store meta location
+                    curr_pos=lseek(archivefd,stoi(meta.curr_pos),SEEK_SET);
+                    int n=0;
+                    int num=0;
+                    char bufx[2];
+                    int filex= creat(files[count].c_str(),0644);        //created file
+                    while((n=read(archivefd, bufx, 1))>0)
+                    {
+                        write(filex,bufx,1);
+                        curr_pos+=n;
+                        num+=n;
+                        memset(bufx,0,sizeof(bufx));
+                        if(num==stoi(meta.size))
+                            break;
+                    }
+
+                    change_attributes(filex,meta);
+
+                    count++;
+                    curr_pos=lseek(archivefd,meta_pos,SEEK_SET);
+                    if(count==files_num)
+                    {
+                        printf("Success! Everything is extracted");
+                        break;
+                    }
                 }
             }
             else
