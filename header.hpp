@@ -23,6 +23,7 @@
 using namespace std;
 //============================================================================
 int archivefd;
+//offset for currest position, data position, metadata position
 off_t curr_pos;
 off_t data_pos;
 off_t meta_pos;

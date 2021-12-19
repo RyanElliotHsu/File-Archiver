@@ -11,6 +11,7 @@
 using namespace std;
 
 //============================================================================
+//clear values for metadata
 void clears(struct Metadata &meta)
 {
     meta.name="";
@@ -73,8 +74,8 @@ int getstruct(struct Metadata &meta)
 
 void change_attributes(int fd,struct Metadata meta)
 {
-    fchmod(fd,stoi(meta.st_mode));
-    fchown(fd,stoi(meta.uid),stoi(meta.gid));        
+    fchmod(fd,stoi(meta.st_mode));              //change rights of file
+    fchown(fd,stoi(meta.uid),stoi(meta.gid));   //change owner and groups of file   
 }
 
 void printer(string pathx)
@@ -97,6 +98,7 @@ void printer(string pathx)
     }
 }
 
+//for recursive calls to extractor
 void extractor(string pathx)
 {   
     pathx+="/";
@@ -106,7 +108,6 @@ void extractor(string pathx)
     {    
         if(meta.type=="d")
         {
-            cout<<meta.numcontent<<meta.st_mode;
             int nums = stoi(meta.numcontent);
             //create directory
             pathx+=meta.name;
@@ -142,6 +143,7 @@ void extractor(string pathx)
     }
 }
 
+//for recursive calls to archiver
 void archiver(struct dirent* dirpx,string pathx, string &metadata)
 {
     struct stat statbuf;

@@ -1,6 +1,6 @@
-output: main.cpp 
+adzip: main.cpp 
 	g++ -o header header.hpp
-	g++ -o output main.cpp
+	g++ -o adzip main.cpp
 
 main.o: main.cpp header.hpp
 	g++ -c main.cpp

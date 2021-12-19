@@ -32,24 +32,27 @@ int main(int argc, char* argv[])
     //if number of inline parameters are less than 4 the code won't run
 	if(argc<3)
 	{
-        perror("Please input all parameters\n");
+        perror("Please input all parameters.\n");
         exit(1);
 	}
 
 	for(int i=1;i<argc;i++)
     {   
         printf("%s\n",argv[i]);
-        //archiving
+        
+        //checking if the flag for archiving is true
         if(strcmp(argv[i],"-c")==0)
         {   
-            printf("Archiving");
+            //archiving
+            printf("Archiving...\n\n");
             c=1;
             i++;
             archive=argv[i];
             i++;
             start=i;
             while(i<argc)
-            {
+            {   
+                //storing the user inputed file names
                 files[i-start]=argv[i];
                 files_num++;
                 i++;
@@ -66,9 +69,11 @@ int main(int argc, char* argv[])
                 }
             }
         }
-        //setting filename
+
+        //checking if the flag for extraction is true
         else if (strcmp(argv[i],"-x")==0)
         {   
+            //setting filename
             x=1;
             i++;
             archive=argv[i];
@@ -76,6 +81,7 @@ int main(int argc, char* argv[])
             start=i;
             while(i<argc)
             {
+                //storing the user inputed file names
                 files[i-start]=argv[i];
                 files_num++;
                 i++;
@@ -92,6 +98,8 @@ int main(int argc, char* argv[])
                 }
             }
         }
+
+        //checking if the flag for appending is true
         else if (strcmp(argv[i],"-a")==0)
         {   
             a=1;
@@ -101,6 +109,7 @@ int main(int argc, char* argv[])
             start=i;
             while(i<argc)
             {
+                //storing the user inputed file names
                 files[i-start]=argv[i];
                 files_num++;
                 i++;
@@ -117,17 +126,20 @@ int main(int argc, char* argv[])
                 }
             }
         }
+
+        //checking if the flag for printing metadata is true
         else if (strcmp(argv[i],"-m")==0)
         {   
             m=1;
             i++;
             archive=argv[i];
         }
+
+        //checking if the flag for printing hierarchy is true
         else if (strcmp(argv[i],"-p")==0)
         {   
             p=1;
             i++;
-            printf("Hierarchies");
             archive=argv[i];
         }
     }
@@ -145,6 +157,7 @@ int main(int argc, char* argv[])
 
         while(files_num>0)
         {   
+            //error checking for retrieving inode data
             if (stat(files[count].c_str(),&statbuf)==-1)
             {
                 perror(" Failed to get file status ");
@@ -154,13 +167,13 @@ int main(int argc, char* argv[])
             {
                 //file
                 int filex;
+                //error checking for opening file
                 if ((filex = open(files[count].c_str(), O_RDONLY)) < 0)
                 {
                     perror("open");
                     exit(1);
                 }
                 int n=0;
-                //curr_pos=lseek(archivefd,data_pos,SEEK_SET);
                 curr_pos=lseek(archivefd,0,SEEK_CUR);
                 //appending all inode information to metadata
                 metadata += "f";
@@ -222,7 +235,8 @@ int main(int argc, char* argv[])
                     metadata += to_string(statbuf.st_gid);
                     metadata += ":";
                     data_pos=curr_pos;
-                    rewinddir(dirx);
+
+                    rewinddir(dirx);    //rewinding the directory to traverse again 
                     while ((dirp = readdir(dirx)) != NULL )
                     {
                         path="";
@@ -230,7 +244,7 @@ int main(int argc, char* argv[])
                         path+="/";
                         if(strcmp(dirp->d_name,"..")==0||strcmp(dirp->d_name,".")==0)
                             continue;
-                        archiver(dirp,path,metadata);
+                        archiver(dirp,path,metadata);   //recursively call archiver function to traverse another directory
                     }
                     closedir(dirx);
                     meta_pos=curr_pos;
@@ -249,7 +263,6 @@ int main(int argc, char* argv[])
         }
         //when the data from all files has been put together append the metadata section
         meta_pos = lseek(archivefd, 0, SEEK_CUR);
-        cout<<meta_pos<<"\n";
         count=write(archivefd,metadata.c_str(),metadata.size());
         //write location of metadata to header
         curr_pos = lseek(archivefd,0,SEEK_SET);
@@ -258,12 +271,13 @@ int main(int argc, char* argv[])
         int w=write(archivefd,str,sizeof(str));
         close(archivefd);
     }
+
     else if(a==1)
     {
         //append
         string path="";
         metadata="";
-        if((archivefd=open(archive.c_str(),O_RDONLY))<0)
+        if((archivefd=open(archive.c_str(),O_RDWR))<0)
             perror("open");
         char loc[20];
         int count = read(archivefd,loc,20);
@@ -280,8 +294,9 @@ int main(int argc, char* argv[])
         //write more data
         curr_pos=lseek(archivefd,meta_pos,SEEK_SET);
 
-           while(files_num>0)
+             while(files_num>0)
         {   
+            //error checking for getting inode data
             if (stat(files[count].c_str(),&statbuf)==-1)
             {
                 perror(" Failed to get file status ");
@@ -291,13 +306,15 @@ int main(int argc, char* argv[])
             {
                 //file
                 int filex;
+                //error check for opening file
                 if ((filex = open(files[count].c_str(), O_RDONLY)) < 0)
                 {
                     perror("open");
                     exit(1);
                 }
                 int n=0;
-                curr_pos=lseek(archivefd,0,SEEK_END);
+                //curr_pos=lseek(archivefd,data_pos,SEEK_SET);
+                curr_pos=lseek(archivefd,0,SEEK_CUR);
                 //appending all inode information to metadata
                 metadata += "f";
                 metadata += "?";
@@ -316,7 +333,7 @@ int main(int argc, char* argv[])
                 metadata += to_string(statbuf.st_gid);
                 metadata += ":";
                 while((n=read(filex, buffer, sizeof(buffer)))>0)
-		        {
+                {
                     write(archivefd,buffer,n);
                     curr_pos+=n;
                 }
@@ -329,7 +346,7 @@ int main(int argc, char* argv[])
                 //dir
                 //condition to skip if .. or .
                 DIR * dirx ;
-	            struct dirent *dirp ;
+                struct dirent *dirp ;
                 if ((dirx = opendir(files[count].c_str())) == NULL)
                     fprintf (stderr , " cannot open %s \n",files[count].c_str());
                 else {
@@ -345,7 +362,7 @@ int main(int argc, char* argv[])
                     metadata += "?";
                     metadata += files[count];
                     metadata += "?";
-                    metadata += to_string(curr_pos);
+                    metadata += to_string(data_pos);
                     metadata += "?";
                     metadata += to_string(num_contents);                //append ? after every element as delimiter
                     metadata += "?";
@@ -371,7 +388,6 @@ int main(int argc, char* argv[])
                     closedir(dirx);
                     meta_pos=curr_pos;
                     data_pos=curr_pos;
-                    cout<<meta_pos<<metadata;
                 }
 
             }
@@ -384,10 +400,10 @@ int main(int argc, char* argv[])
             count++;
             files_num--;
         }
+        
         //when the data from all files has been put together append the metadata section
         meta_pos = lseek(archivefd, 0, SEEK_CUR);
-        cout<<meta_pos<<"\n";
-        count=write(archivefd,metadata.c_str(),metadata.size());
+        count=write(archivefd,metadata.c_str(),1.5*metadata.size());
         //write location of metadata to header
         curr_pos = lseek(archivefd,0,SEEK_SET);
         char str[20];
@@ -397,7 +413,7 @@ int main(int argc, char* argv[])
     }
         else if(x==1)
     {   
-        cout<<"Extracting....\n";
+        cout<<"Extracting...\n";
         //extract
         if((archivefd=open(archive.c_str(),O_RDONLY))<0)
             perror("open");
@@ -405,36 +421,34 @@ int main(int argc, char* argv[])
         char loc[20];
         int count = read(archivefd,loc,20);
         meta_pos=atoi(loc);
+        //position to address of metadata
         curr_pos=lseek(archivefd,meta_pos,SEEK_SET);
         count=0;
         struct Metadata meta;
-        while(getstruct(meta)!=-1)          
+        if(argc==3)
         {
-            cout<<meta.numcontent<<meta.st_mode<<meta.curr_pos<<meta.size;
-            if(meta.name==files[count])
-            {
-                //extract file
-                cout<<"File found!\n";
-                if(meta.type=="d")
-                {   
+            int check=getstruct(meta);
+            while(check!=-1)
+            {    
+                if(meta.type=="d")  //check if metadata type is directory
+                {
                     int nums = stoi(meta.numcontent);
-
                     //create directory
-                    string path=meta.name;
-                    mkdir(path.c_str(),stoi(meta.st_mode));
+                    mkdir(meta.name.c_str(),stoi(meta.st_mode));
                     while(nums>0)
                     {
-                        extractor(path);
+                        extractor(meta.name);
                         nums--;
                     }
                 }
-                else
+                else    //extracting for file type
                 {
+                    off_t store_pos = lseek(archivefd,0,SEEK_CUR);
                     curr_pos=lseek(archivefd,stoi(meta.curr_pos),SEEK_SET);
                     int n=0;
                     int num=0;
                     char bufx[2];
-                    int filex= creat(files[count].c_str(),0644);        //created file
+                    int filex= creat(meta.name.c_str(),0644);        //created file
                     while((n=read(archivefd, bufx, 1))>0)
                     {
                         write(filex,bufx,1);
@@ -445,27 +459,74 @@ int main(int argc, char* argv[])
                             break;
                     }
 
-                    change_attributes(filex,meta);
-                    count++;
-                    curr_pos=lseek(archivefd,meta_pos,SEEK_SET);
-                    if(count==files_num)
-                    {
-                        printf("Success! Everything is extracted");
-                        break;
-                    }
+                    change_attributes(filex,meta);  //change owner, groups, and rights of file
+                    curr_pos=lseek(archivefd,store_pos,SEEK_SET);
                 }
-            }
-            else
-            {
-                continue;
+                check=getstruct(meta);
             }
         }
-    
+
+        else
+        { 
+            while(getstruct(meta)!=-1)          
+            {
+                if(meta.name==files[count])
+                {
+                    //extract file
+                    cout<<"File found!\n";
+                    if(meta.type=="d")
+                    {   
+                        int nums = stoi(meta.numcontent);
+
+                        //create directory
+                        string path=meta.name;
+                        mkdir(path.c_str(),stoi(meta.st_mode));
+                        while(nums>0)
+                        {
+                            //recursively call extractor function to traverse directory
+                            extractor(path);
+                            nums--;
+                        }
+                    }
+                    else
+                    {
+                        curr_pos=lseek(archivefd,stoi(meta.curr_pos),SEEK_SET);
+                        int n=0;
+                        int num=0;
+                        char bufx[2];
+                        int filex= creat(files[count].c_str(),0644);        //created file
+                        while((n=read(archivefd, bufx, 1))>0)
+                        {
+                            write(filex,bufx,1);
+                            curr_pos+=n;
+                            num+=n;
+                            memset(bufx,0,sizeof(bufx));
+                            if(num==stoi(meta.size))
+                                break;
+                        }
+
+                        change_attributes(filex,meta);
+                        count++;
+                        curr_pos=lseek(archivefd,meta_pos,SEEK_SET);
+                        if(count==files_num)
+                        {
+                            printf("Success! Everything is extracted");
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    continue;
+                }
+            }
+        }
     }
+
     else if(m==1)
     {
         //print metadata
-        printf("Printing metadata....\n");
+        printf("Printing metadata...\n\n");
         if((archivefd=open(archive.c_str(),O_RDONLY))<0)
             perror("open");
         
@@ -476,18 +537,19 @@ int main(int argc, char* argv[])
         struct Metadata meta;
         while(getstruct(meta)!=-1)          
         {
-            cout<<meta.name<<"\n";
-            cout<<meta.uid<<"\n";
-            cout<<meta.gid<<"\n";
-            cout<<meta.st_mode<<"\n";
+            cout<<"File Name: "<<meta.name<<"\n";
+            cout<<"Owner    : "<<meta.uid<<"\n";
+            cout<<"Groups   : "<<meta.gid<<"\n";
+            cout<<"Rights   : "<<meta.st_mode<<"\n\n";
             clears(meta);
         }
 
     }
+    
     else if(p==1)
     {
         //show hierarchy
-        printf("Printing hierarchies....\n");
+        printf("Printing hierarchies...\n");
         if((archivefd=open(archive.c_str(),O_RDONLY))<0)
             perror("open");
         
