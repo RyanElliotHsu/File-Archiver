@@ -28,7 +28,6 @@ off_t curr_pos;
 off_t data_pos;
 off_t meta_pos;
 char buffer[BSIZE];
-
 struct Metadata
 {
     string type;
@@ -65,7 +64,6 @@ int getstruct(struct Metadata &meta)
     int what_data=0;
     while((count=read(archivefd, meta_bufx, 1))>0)
     {   
-        //cout<<meta_bufx<<"\n";
         if(strcmp(meta_bufx,"?")==0)
         {   
             if(what_data==0)
@@ -84,7 +82,6 @@ int getstruct(struct Metadata &meta)
                 meta.uid=meta_buf;
             else if(what_data==7)
                 meta.gid=meta_buf;
-            //cout<<meta_buf<<"\n";
             meta_buf="";
             memset(meta_bufx, 0, sizeof(meta_bufx));
             what_data++;
@@ -101,9 +98,7 @@ int getstruct(struct Metadata &meta)
 
         else
         {
-            // printf("HELLO %s, %s A\n",meta_bufx,meta_buf.c_str());
             meta_buf+=meta_bufx;
-            //cout<<meta_buf<<"\n\n";
             memset(meta_bufx, 0, sizeof(meta_bufx));
         }
     }
@@ -117,8 +112,6 @@ void change_attributes(int fd,struct Metadata meta)
 }
 void printer(string pathx)
 {
-   
-
     struct Metadata meta;
     pathx+="-";
     int check=getstruct(meta);
@@ -136,6 +129,7 @@ void printer(string pathx)
         }
     }
 }
+
 void extractor(string pathx)
 {   
     pathx+="/";
@@ -180,6 +174,7 @@ void extractor(string pathx)
         }
     }
 }
+
 void archiver(struct dirent* dirpx,string pathx, string &metadata)
 {
     struct stat statbuf;
@@ -216,22 +211,10 @@ void archiver(struct dirent* dirpx,string pathx, string &metadata)
         metadata += to_string(statbuf.st_mode);
         metadata += "?";
         metadata += to_string(statbuf.st_size);
-        // metadata += "?";
-        // metadata += statbuf.st_dev;
-        // metadata += "?";
-        // metadata += statbuf.st_ino;
-        // metadata += "?";
-        // metadata += statbuf.st_nlink;
-        // metadata += "?";
         metadata += "?";
         metadata += to_string(statbuf.st_uid);
         metadata += "?";
         metadata += to_string(statbuf.st_gid);
-        // metadata += statbuf.st_atime;
-        // metadata += "?";
-        // metadata += statbuf.st_mtime;
-        // metadata += "?";
-        // metadata += statbuf.st_ctime;
         metadata += ":";
         while((n=read(filex, buffer, sizeof(buffer)))>0)
         {
@@ -241,7 +224,6 @@ void archiver(struct dirent* dirpx,string pathx, string &metadata)
         data_pos=curr_pos;
         meta_pos=curr_pos;
         cout<<meta_pos<<"AA\n";
-        //curr_pos=lseek(archivefd,curr_pos,SEEK_SET);
     }
     else if((statbuf.st_mode & S_IFMT) == S_IFDIR)
     {
@@ -274,17 +256,6 @@ void archiver(struct dirent* dirpx,string pathx, string &metadata)
             metadata += to_string(statbuf.st_uid);
             metadata += "?";
             metadata += to_string(statbuf.st_gid);
-            // metadata += statbuf.st_nlink;
-            // metadata += "?";
-            // metadata += statbuf.st_uid;
-            // metadata += "?";
-            // metadata += statbuf.st_gid;
-            // metadata += "?";
-            // metadata += statbuf.st_atime;
-            // metadata += "?";
-            // metadata += statbuf.st_mtime;
-            // metadata += "?";
-            // metadata += statbuf.st_ctime;
             metadata += ":";
             path+="/";
             rewinddir(dirx);
@@ -305,8 +276,6 @@ void archiver(struct dirent* dirpx,string pathx, string &metadata)
 
 }
 
-
-
 int main(int argc, char* argv[])
 {
     bool c=0;
@@ -322,7 +291,6 @@ int main(int argc, char* argv[])
     struct stat statbuf ;
     string metadata="";
     int num_contents=0;         //to count the number of contents within a directory
-
 
     //interpreting command line input
     //if number of inline parameters are less than 4 the code won't run
@@ -361,7 +329,6 @@ int main(int argc, char* argv[])
                     files_size=files_size*2; 
                 }
             }
-
         }
         //setting filename
         else if (strcmp(argv[i],"-x")==0)
@@ -413,7 +380,6 @@ int main(int argc, char* argv[])
                     files_size=files_size*2; 
                 }
             }
-
         }
         else if (strcmp(argv[i],"-m")==0)
         {   
@@ -427,7 +393,6 @@ int main(int argc, char* argv[])
             i++;
             printf("Hierarchies");
             archive=argv[i];
-
         }
     }
 
@@ -441,8 +406,6 @@ int main(int argc, char* argv[])
         archivefd = creat(archive.c_str(),0644);        //created file
         int count=0;
         curr_pos=lseek(archivefd,data_pos,SEEK_SET);
-        // if(write(archivefd,buffer,sizeof(buffer))<0)
-        //     perror("write");
 
         while(files_num>0)
         {   
@@ -475,22 +438,10 @@ int main(int argc, char* argv[])
                 metadata += to_string(statbuf.st_mode);
                 metadata += "?";
                 metadata += to_string(statbuf.st_size);
-                // metadata += "?";
-                // metadata += statbuf.st_dev;
-                // metadata += "?";
-                // metadata += statbuf.st_ino;
-                // metadata += "?";
-                // metadata += statbuf.st_nlink;
-                // metadata += "?";
-                // metadata += statbuf.st_uid;
-                // metadata += "?";
-                // metadata += statbuf.st_gid;
-                // metadata += "?";
-                // metadata += statbuf.st_atime;
-                // metadata += "?";
-                // metadata += statbuf.st_mtime;
-                // metadata += "?";
-                // metadata += statbuf.st_ctime;
+                metadata += "?";
+                metadata += to_string(statbuf.st_uid);
+                metadata += "?";
+                metadata += to_string(statbuf.st_gid);
                 metadata += ":";
                 while((n=read(filex, buffer, sizeof(buffer)))>0)
 		        {
@@ -505,7 +456,6 @@ int main(int argc, char* argv[])
             {
                 //dir
                 //condition to skip if .. or .
-
                 DIR * dirx ;
 	            struct dirent *dirp ;
                 if ((dirx = opendir(files[count].c_str())) == NULL)
@@ -534,21 +484,8 @@ int main(int argc, char* argv[])
                     metadata += to_string(statbuf.st_uid);
                     metadata += "?";
                     metadata += to_string(statbuf.st_gid);
-                    // metadata += "?";
-                    // metadata += statbuf.st_nlink;
-                    // metadata += "?";
-                    // metadata += statbuf.st_uid;
-                    // metadata += "?";
-                    // metadata += statbuf.st_gid;
-                    // metadata += "?";
-                    // metadata += statbuf.st_atime;
-                    // metadata += "?";
-                    // metadata += statbuf.st_mtime;
-                    // metadata += "?";
-                    // metadata += statbuf.st_ctime;
                     metadata += ":";
                     data_pos=curr_pos;
-                    //cout<<metadata<<"\n";
                     rewinddir(dirx);
                     while ((dirp = readdir(dirx)) != NULL )
                     {
@@ -575,7 +512,6 @@ int main(int argc, char* argv[])
             files_num--;
         }
         //when the data from all files has been put together append the metadata section
-        //cout<<metadata<<metadata.size();
         meta_pos = lseek(archivefd, 0, SEEK_CUR);
         cout<<meta_pos<<"\n";
         count=write(archivefd,metadata.c_str(),metadata.size());
@@ -605,7 +541,6 @@ int main(int argc, char* argv[])
             metadata+= buffer;
         }
 
-
         //write more data
         curr_pos=lseek(archivefd,meta_pos,SEEK_SET);
 
@@ -626,7 +561,6 @@ int main(int argc, char* argv[])
                     exit(1);
                 }
                 int n=0;
-                //curr_pos=lseek(archivefd,data_pos,SEEK_SET);
                 curr_pos=lseek(archivefd,0,SEEK_END);
                 //appending all inode information to metadata
                 metadata += "f";
@@ -640,22 +574,10 @@ int main(int argc, char* argv[])
                 metadata += to_string(statbuf.st_mode);
                 metadata += "?";
                 metadata += to_string(statbuf.st_size);
-                // metadata += "?";
-                // metadata += statbuf.st_dev;
-                // metadata += "?";
-                // metadata += statbuf.st_ino;
-                // metadata += "?";
-                // metadata += statbuf.st_nlink;
-                // metadata += "?";
-                // metadata += statbuf.st_uid;
-                // metadata += "?";
-                // metadata += statbuf.st_gid;
-                // metadata += "?";
-                // metadata += statbuf.st_atime;
-                // metadata += "?";
-                // metadata += statbuf.st_mtime;
-                // metadata += "?";
-                // metadata += statbuf.st_ctime;
+                metadata += "?";
+                metadata += to_string(statbuf.st_uid);
+                metadata += "?";
+                metadata += to_string(statbuf.st_gid);
                 metadata += ":";
                 while((n=read(filex, buffer, sizeof(buffer)))>0)
 		        {
@@ -670,7 +592,6 @@ int main(int argc, char* argv[])
             {
                 //dir
                 //condition to skip if .. or .
-
                 DIR * dirx ;
 	            struct dirent *dirp ;
                 if ((dirx = opendir(files[count].c_str())) == NULL)
@@ -699,21 +620,8 @@ int main(int argc, char* argv[])
                     metadata += to_string(statbuf.st_uid);
                     metadata += "?";
                     metadata += to_string(statbuf.st_gid);
-                    // metadata += "?";
-                    // metadata += statbuf.st_nlink;
-                    // metadata += "?";
-                    // metadata += statbuf.st_uid;
-                    // metadata += "?";
-                    // metadata += statbuf.st_gid;
-                    // metadata += "?";
-                    // metadata += statbuf.st_atime;
-                    // metadata += "?";
-                    // metadata += statbuf.st_mtime;
-                    // metadata += "?";
-                    // metadata += statbuf.st_ctime;
                     metadata += ":";
                     data_pos=curr_pos;
-                    //cout<<metadata<<"\n";
                     rewinddir(dirx);
                     while ((dirp = readdir(dirx)) != NULL )
                     {
@@ -741,7 +649,6 @@ int main(int argc, char* argv[])
             files_num--;
         }
         //when the data from all files has been put together append the metadata section
-        //cout<<metadata<<metadata.size();
         meta_pos = lseek(archivefd, 0, SEEK_CUR);
         cout<<meta_pos<<"\n";
         count=write(archivefd,metadata.c_str(),metadata.size());
@@ -759,14 +666,10 @@ int main(int argc, char* argv[])
         if((archivefd=open(archive.c_str(),O_RDONLY))<0)
             perror("open");
         
-        // printf("%d\n",archivefd);
         char loc[20];
         int count = read(archivefd,loc,20);
-        // printf("%s\n",loc);
         meta_pos=atoi(loc);
-        // printf("%d\n",count);
         curr_pos=lseek(archivefd,meta_pos,SEEK_SET);
-        // printf("%ld\n",curr_pos);
         count=0;
         struct Metadata meta;
         while(getstruct(meta)!=-1)          
@@ -779,12 +682,10 @@ int main(int argc, char* argv[])
                 if(meta.type=="d")
                 {   
                     int nums = stoi(meta.numcontent);
+
                     //create directory
                     string path=meta.name;
-                    
                     mkdir(path.c_str(),stoi(meta.st_mode));
-
-
                     while(nums>0)
                     {
                         extractor(path);
@@ -793,7 +694,6 @@ int main(int argc, char* argv[])
                 }
                 else
                 {
-                    //meta_pos=lseek(archivefd,0,SEEK_CUR);           //store meta location
                     curr_pos=lseek(archivefd,stoi(meta.curr_pos),SEEK_SET);
                     int n=0;
                     int num=0;
@@ -810,7 +710,6 @@ int main(int argc, char* argv[])
                     }
 
                     change_attributes(filex,meta);
-
                     count++;
                     curr_pos=lseek(archivefd,meta_pos,SEEK_SET);
                     if(count==files_num)
@@ -825,25 +724,19 @@ int main(int argc, char* argv[])
                 continue;
             }
         }
-        
-
+    
     }
     else if(m==1)
     {
         //print metadata
-
         printf("Printing metadata....\n");
         if((archivefd=open(archive.c_str(),O_RDONLY))<0)
             perror("open");
         
-        //printf("%d\n",archivefd);
         char loc[20];
         int count = read(archivefd,loc,20);
-        //printf("%s\n",loc);
         meta_pos=atoi(loc);
-        //printf("%d\n",count);
         curr_pos=lseek(archivefd,meta_pos,SEEK_SET);
-        //printf("%ld\n",curr_pos);
         struct Metadata meta;
         while(getstruct(meta)!=-1)          
         {
@@ -852,9 +745,6 @@ int main(int argc, char* argv[])
             cout<<meta.name<<"\n";
             clears(meta);
         }
-        
-
-
 
     }
     else if(p==1)
@@ -864,19 +754,14 @@ int main(int argc, char* argv[])
         if((archivefd=open(archive.c_str(),O_RDONLY))<0)
             perror("open");
         
-        // printf("%d\n",archivefd);
         char loc[20];
         int count = read(archivefd,loc,20);
-        // printf("%s\n",loc);
         meta_pos=atoi(loc);
-        // printf("%d\n",count);
         curr_pos=lseek(archivefd,meta_pos,SEEK_SET);
-        // printf("%ld\n",curr_pos);
         struct Metadata meta;
         while(getstruct(meta)!=-1)          
         {
             cout<<meta.name<<meta.numcontent<<"\n";
-            //printf("%s\n",meta.name.c_str());
             if(meta.type=="f")
                 continue;
             else if(meta.type=="d")
@@ -890,10 +775,5 @@ int main(int argc, char* argv[])
             }
             clears(meta);
         }
-
-
-
     }
-
-
 }
