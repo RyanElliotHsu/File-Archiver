@@ -58,6 +58,7 @@ void clears(struct Metadata &meta)
 }
 int getstruct(struct Metadata &meta)
 {
+    //cout<<"HI\n";
     string meta_buf="";
     char meta_bufx[2]="0";
     char loc[20];
@@ -113,63 +114,6 @@ void change_attributes(int fd,struct Metadata meta)
 }
 void printer(string pathx)
 {
-    // char meta_buf[50];
-    // char meta_bufx[1];
-    // int count;
-    // int skip=0;
-    // while((count=read(archivefd, meta_bufx, 1))>0)
-    // {
-    //     if(skip==0)
-    //     {    
-    //         if(meta_bufx=="?")
-    //         {
-    //             if(strcmp(meta_buf,"F")==0)
-    //             {    
-    //                 memset(meta_buf, 0, sizeof(meta_buf));
-    //                 count=read(archivefd,meta_bufx,1);
-    //                 while(strcmp(meta_bufx,"?")!=0)
-    //                 {
-    //                     strcat(meta_buf,meta_bufx);
-    //                     count=read(archivefd,meta_bufx,1);    
-    //                 }
-    //                 printf("%s%s",pathx.c_str(),meta_buf);
-    //             }
-    //             else if (strcmp(meta_buf,"D")==0)
-    //             {
-    //                 pathx+"-";
-    //                 memset(meta_buf, 0, sizeof(meta_buf));
-    //                 count=read(archivefd,meta_bufx,1);
-
-    //                 while(strcmp(meta_bufx,"?")!=0)
-    //                 {
-    //                     strcat(meta_buf,meta_bufx);
-    //                     count=read(archivefd,meta_bufx,1);    
-    //                 }
-    //                 printf("%s%s",pathx.c_str(),meta_buf);
-    //                 printer(pathx,num_f);
-                    
-    //             }
-    //             memset(meta_buf, 0, sizeof(meta_buf));
-    //             skip=1;
-    //         }
-
-    //         else
-    //         {
-    //             strcat(meta_buf,meta_bufx);
-    //         }
-    //     }
-    //     else
-    //     {
-    //         while(meta_bufx!=":")
-    //         {
-    //             count=read(archivefd,meta_bufx,1); 
-    //         }
-    //         memset(meta_buf, 0, sizeof(meta_buf));
-    //         skip=0;
-    //         continue;
-    //     }
-    // }
-
     struct Metadata meta;
     pathx+="-";
     int check=getstruct(meta);
@@ -212,7 +156,7 @@ void archiver(struct dirent* dirpx,string pathx, string &metadata)
             exit(1);
         }
         int n=0;
-        curr_pos=lseek(archivefd,data_pos,SEEK_SET);
+        curr_pos=lseek(archivefd,0,SEEK_CUR);
         //appending all inode information to metadata
         metadata += "f";
         metadata += "?";
@@ -273,7 +217,7 @@ void archiver(struct dirent* dirpx,string pathx, string &metadata)
             metadata += "?";
             metadata += to_string(data_pos);
             metadata += "?";
-            metadata += "0";                //append ? after every element as delimiter
+            metadata += to_string(num_contents);                //append ? after every element as delimiter
             metadata += "?";
             metadata += to_string(statbuf.st_mode);
             metadata += "?";
@@ -399,6 +343,7 @@ int main(int argc, char* argv[])
                     files_size=files_size*2; 
                 }
             }
+            //scout<<files[0]<<"\n";
         }
         else if (strcmp(argv[i],"-a")==0)
         {   
@@ -759,26 +704,47 @@ int main(int argc, char* argv[])
 
     }
     else if(x==1)
-    {
+    {   
+        cout<<"Extracting....\n";
         //extract
-        int archivefd;
-        if ((archivefd = open(archive.c_str(),O_RDONLY))<0)     //opening archive file to read from
-        {
+        if((archivefd=open(archive.c_str(),O_RDONLY))<0)
             perror("open");
-            exit(1);
-        }
-        //getting the position of the metadata
+        
+        // printf("%d\n",archivefd);
         char loc[20];
         int count = read(archivefd,loc,20);
+        // printf("%s\n",loc);
         meta_pos=atoi(loc);
+        // printf("%d\n",count);
         curr_pos=lseek(archivefd,meta_pos,SEEK_SET);
-        struct Metadata meta;
+        // printf("%ld\n",curr_pos);
         count=0;
-        while(getstruct(meta)!=-1)
+        struct Metadata meta;
+        while(getstruct(meta)!=-1)          
         {
+            cout<<meta.name<<files[count];
             if(meta.name==files[count])
             {
                 //extract file
+                cout<<"File found!\n";
+                //meta_pos=lseek(archivefd,0,SEEK_CUR);           //store meta location
+                curr_pos=lseek(archivefd,stoi(meta.curr_pos),SEEK_SET);
+                int n=0;
+                int num=0;
+                char bufx[2];
+                int filex= creat(files[count].c_str(),0644);        //created file
+                while((n=read(archivefd, bufx, 1))>0)
+		        {
+                    write(filex,bufx,1);
+                    curr_pos+=n;
+                    num+=n;
+                    memset(bufx,0,sizeof(bufx));
+                    if(num==stoi(meta.size))
+                        break;
+                }
+
+                change_attributes(filex,meta);
+
                 count++;
                 curr_pos=lseek(archivefd,meta_pos,SEEK_SET);
                 if(count==files_num)
