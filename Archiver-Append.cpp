@@ -261,7 +261,7 @@ void archiver(struct dirent* dirpx,string pathx, string &metadata)
         metadata += "?";
         metadata += to_string(data_pos);
         metadata += "?";
-        metadata += "0";                //append ? after every element as delimiter
+        metadata += to_string(num_contents);                //append ? after every element as delimiter
         metadata += "?";
         metadata += to_string(statbuf.st_mode);
         metadata += "?";
@@ -314,7 +314,7 @@ void archiver(struct dirent* dirpx,string pathx, string &metadata)
             metadata += "?";
             metadata += to_string(data_pos);
             metadata += "?";
-            metadata += "0";                //append ? after every element as delimiter
+            metadata += to_string(num_contents);                //append ? after every element as delimiter
             metadata += "?";
             metadata += to_string(statbuf.st_mode);
             metadata += "?";
@@ -337,6 +337,7 @@ void archiver(struct dirent* dirpx,string pathx, string &metadata)
             // metadata += statbuf.st_ctime;
             metadata += ":";
             path+="/";
+            rewinddir(dirx);
             while ((dirp = readdir (dirx)) != NULL )
             {
                 if(strcmp(dirp->d_name,"..")==0||strcmp(dirp->d_name,".")==0)
@@ -803,7 +804,6 @@ int main(int argc, char* argv[])
     else if(x==1)
     {
         //extract
-        int archivefd;
         if ((archivefd = open(archive.c_str(),O_RDONLY))<0)     //opening archive file to read from
         {
             perror("open");
